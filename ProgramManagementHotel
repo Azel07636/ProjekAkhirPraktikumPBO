@@ -1,0 +1,356 @@
+import java.util.ArrayList;
+import java.util.Scanner;
+
+// Abstraksi kelas utama Hotel
+class Hotel {
+    private ArrayList<Kamar> daftarKamar;
+    private ArrayList<Reservasi> daftarReservasi;
+    private Scanner scanner;
+
+    public Hotel() {
+        this.daftarKamar = new ArrayList<>();
+        this.daftarReservasi = new ArrayList<>();
+        this.scanner = new Scanner(System.in);
+    }
+
+    // Login Admin
+    public void loginAdmin() {
+        System.out.println("Admin login berhasil!");
+        System.out.println("--------------------------");
+    }
+
+    // Menambahkan data kamar baru (Create)
+    public void tambahKamar() {
+        System.out.println("Masukkan nomor kamar: ");
+        int nomerKamar = scanner.nextInt();
+        System.out.println("Pilih jenis bed (Single/Double): ");
+        String jenisBed = scanner.next();
+        System.out.println("Masukkan harga per malam: ");
+        double hargaPerMalam = scanner.nextDouble();
+
+        Kamar kamar;
+        if (jenisBed.equalsIgnoreCase("Single")) {
+            kamar = new KamarSingleBed(nomerKamar, hargaPerMalam);
+        } else if (jenisBed.equalsIgnoreCase("Double")) {
+            kamar = new KamarDoubleBed(nomerKamar, hargaPerMalam);
+        } else {
+            System.out.println("Jenis bed tidak valid.");
+            System.out.println("-------------------------");
+            return;
+        }
+
+        daftarKamar.add(kamar);
+        System.out.println("Data kamar berhasil ditambahkan.");
+        System.out.println("-------------------------");
+    }
+
+    // Melihat informasi kamar (Read)
+    public void lihatInformasiKamar() {
+        System.out.println("Informasi Kamar:");
+        for (Kamar kamar : daftarKamar) {
+            kamar.tampilkanInformasi();
+            System.out.println("-------------------------");
+        }
+    }
+
+    // Mengedit data kamar (Update)
+    public void editDataKamar() {
+        System.out.println("Masukkan nomor kamar yang akan diedit: ");
+        int nomerKamar = scanner.nextInt();
+
+        Kamar kamar = cariKamar(nomerKamar);
+        if (kamar != null) {
+            System.out.println("Masukkan harga per malam baru: ");
+            double hargaPerMalamBaru = scanner.nextDouble();
+            kamar.setHargaPerMalam(hargaPerMalamBaru);
+            System.out.println("Data kamar berhasil diupdate.");
+            System.out.println("-------------------------");
+        } else {
+            System.out.println("Kamar tidak ditemukan.");
+            System.out.println("-------------------------");
+        }
+    }
+
+    // Reservasi kamar (Create)
+    // Reservasi kamar (Create)
+    public void reservasiKamar() {
+        System.out.println("Masukkan nomor kamar untuk reservasi: ");
+        int nomerKamar = scanner.nextInt();
+
+        Kamar kamar = cariKamar(nomerKamar);
+        if (kamar != null && kamar.isTersedia()) {
+            // Menggunakan scanner.nextLine() untuk membaca seluruh baris termasuk spasi
+            System.out.println("Masukkan nama tamu: ");
+            scanner.nextLine();  // Menangkap karakter newline setelah nextInt()
+            String namaTamu = scanner.nextLine();
+            System.out.println("Pilih jenis pembayaran (Cash/Non-Cash): ");
+            String jenisPembayaran = scanner.next();
+
+            Reservasi reservasi = new Reservasi(namaTamu, kamar, jenisPembayaran);
+            daftarReservasi.add(reservasi);
+
+            kamar.setTersedia(false);
+
+            System.out.println("Reservasi berhasil dilakukan.");
+            System.out.println("------------------------------");
+        } else if (kamar != null && !kamar.isTersedia()) {
+            System.out.println("Kamar sudah dipesan.");
+            System.out.println("-------------------------");
+        } else {
+            System.out.println("Kamar tidak ditemukan.");
+            System.out.println("-------------------------");
+        }
+    }
+
+
+    // Melihat detail reservasi (Read)
+    public void lihatDetailReservasi() {
+        System.out.println("Masukkan nomor kamar untuk melihat detail reservasi: ");
+        int nomerKamar = scanner.nextInt();
+
+        Kamar kamar = cariKamar(nomerKamar);
+        if (kamar != null) {
+            Reservasi reservasi = cariReservasi(nomerKamar);
+            if (reservasi != null) {
+                reservasi.tampilkanDetail();
+            } else {
+                System.out.println("Belum ada reservasi untuk kamar ini.");
+                System.out.println("-------------------------");
+            }
+        } else {
+            System.out.println("Kamar tidak ditemukan.");
+            System.out.println("-------------------------");
+        }
+    }
+
+    // Reservasi (cek-out) (Delete)
+    public void checkOut() {
+        System.out.println("Masukkan nomor kamar untuk check-out: ");
+        int nomerKamar = scanner.nextInt();
+
+        Kamar kamar = cariKamar(nomerKamar);
+        if (kamar != null && !kamar.isTersedia()) {
+            Reservasi reservasi = cariReservasi(nomerKamar);
+            if (reservasi != null) {
+                double totalHarga = reservasi.hitungTotalHarga();
+                System.out.println("Total harga untuk kamar ini: $" + totalHarga);
+                kamar.setTersedia(true);
+                daftarReservasi.remove(reservasi);
+                System.out.println("Check-out berhasil.");
+                System.out.println("-------------------------");
+            } else {
+                System.out.println("Belum ada reservasi untuk kamar ini.");
+                System.out.println("-------------------------");
+            }
+        } else if (kamar != null && kamar.isTersedia()) {
+            System.out.println("Kamar ini belum direservasi.");
+            System.out.println("-------------------------");
+        } else {
+            System.out.println("Kamar tidak ditemukan.");
+            System.out.println("-------------------------");
+        }
+    }
+
+    // Melihat informasi jumlah kamar yang tersedia
+    public void lihatJumlahKamarTersedia() {
+        int kamarTersedia = 0;
+        for (Kamar kamar : daftarKamar) {
+            if (kamar.isTersedia()) {
+                kamarTersedia++;
+            }
+        }
+        System.out.println("Jumlah kamar yang tersedia: " + kamarTersedia);
+    }
+
+    // Melihat data tamu (Read)
+    public void lihatDataTamu() {
+        System.out.println("Data Tamu:");
+        for (Reservasi reservasi : daftarReservasi) {
+            reservasi.tampilkanDataTamu();
+            System.out.println("------------------------");
+        }
+    }
+
+    // Mencari kamar berdasarkan nomor kamar
+    private Kamar cariKamar(int nomerKamar) {
+        for (Kamar kamar : daftarKamar) {
+            if (kamar.getNomerKamar() == nomerKamar) {
+                return kamar;
+            }
+        }
+        return null;
+    }
+
+    // Mencari reservasi berdasarkan nomor kamar
+    private Reservasi cariReservasi(int nomerKamar) {
+        for (Reservasi reservasi : daftarReservasi) {
+            if (reservasi.getKamar().getNomerKamar() == nomerKamar) {
+                return reservasi;
+            }
+        }
+        return null;
+    }
+}
+
+// Abstraksi kelas "Kamar" (inheritance)
+abstract class Kamar {
+    private int nomerKamar; //(enkapsulasi)
+    private String jenisBed; //ini juga
+    private double hargaPerMalam; // iya inijuga sama
+    private boolean tersedia; // yup sama seperti yg atas
+
+    public Kamar(int nomerKamar, String jenisBed, double hargaPerMalam) {
+        this.nomerKamar = nomerKamar;
+        this.jenisBed = jenisBed;
+        this.hargaPerMalam = hargaPerMalam;
+        this.tersedia = true;
+    }
+
+    public int getNomerKamar() {
+        return nomerKamar;
+    } // biasanya di simbolkan dg adanya "get"
+
+    public double getHargaPerMalam() {
+        return hargaPerMalam;
+    }
+
+    public void setHargaPerMalam(double hargaPerMalam) {
+        this.hargaPerMalam = hargaPerMalam;
+    }
+
+    public boolean isTersedia() {
+        return tersedia;
+    }
+
+    public void setTersedia(boolean tersedia) {
+        this.tersedia = tersedia;
+    }
+
+    public abstract void tampilkanInformasi();
+}
+
+// Subkelas "KamarSingleBed" dan "KamarDoubleBed" (masih ada hubungannya dengankelas "kamar" di tandai dengan "extends")
+class KamarSingleBed extends Kamar {
+    public KamarSingleBed(int nomerKamar, double hargaPerMalam) {
+        super(nomerKamar, "Single Bed", hargaPerMalam);
+    }
+
+    @Override
+    public void tampilkanInformasi() { //polymorphism
+        System.out.println("Nomer Kamar: " + getNomerKamar());
+        System.out.println("Jenis Bed: " + "Single Bed");
+        System.out.println("Harga Per Malam: $" + getHargaPerMalam());
+        System.out.println("Status: " + (isTersedia() ? "Tersedia" : "Tidak Tersedia"));
+        System.out.println("-------------------------");
+    }
+}
+
+//sama seperti atasnya
+class KamarDoubleBed extends Kamar {
+    public KamarDoubleBed(int nomerKamar, double hargaPerMalam) {
+        super(nomerKamar, "Double Bed", hargaPerMalam);
+    }
+
+    @Override
+    public void tampilkanInformasi() {
+        System.out.println("Nomer Kamar: " + getNomerKamar());
+        System.out.println("Jenis Bed: " + "Double Bed");
+        System.out.println("Harga Per Malam: $" + getHargaPerMalam());
+        System.out.println("Status: " + (isTersedia() ? "Tersedia" : "Tidak Tersedia"));
+        System.out.println("-------------------------");
+    }
+}
+
+// Abstraksi kelas Reservasi
+class Reservasi {
+    private String namaTamu;
+    private Kamar kamar;
+    private String jenisPembayaran;
+
+    public Reservasi(String namaTamu, Kamar kamar, String jenisPembayaran) {
+        this.namaTamu = namaTamu;
+        this.kamar = kamar;
+        this.jenisPembayaran = jenisPembayaran;
+    }
+
+    public Kamar getKamar() {
+        return kamar;
+    }
+
+    public double hitungTotalHarga() {
+        return kamar.getHargaPerMalam();
+    }
+
+    public void tampilkanDetail() {
+        System.out.println("-------------------------");
+        System.out.println("Detail Reservasi:");
+        System.out.println("Nama Tamu: " + namaTamu);
+        System.out.println("Nomor Kamar: " + kamar.getNomerKamar());
+        System.out.println("Jenis Pembayaran: " + jenisPembayaran);
+        System.out.println("Total Harga: $" + hitungTotalHarga());
+        System.out.println("-------------------------");
+    }
+
+    public void tampilkanDataTamu() {
+        System.out.println("Nama Tamu: " + namaTamu);
+        System.out.println("Nomor Kamar: " + kamar.getNomerKamar());
+        System.out.println("Jenis Pembayaran: " + jenisPembayaran);
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        Hotel hotel = new Hotel();
+        hotel.loginAdmin();
+
+        // Menu Hotel
+        while (true) {
+            System.out.println("Menu Hotel:");
+            System.out.println("1. Tambah Kamar");
+            System.out.println("2. Lihat Informasi Kamar");
+            System.out.println("3. Edit Data Kamar");
+            System.out.println("4. Reservasi Kamar");
+            System.out.println("5. Lihat Detail Reservasi");
+            System.out.println("6. Check-Out");
+            System.out.println("7. Lihat Jumlah Kamar Tersedia");
+            System.out.println("8. Lihat Data Tamu");
+            System.out.println("0. Keluar");
+
+            Scanner scanner = new Scanner(System.in);
+            int pilihan = scanner.nextInt();
+
+            switch (pilihan) {
+                case 1:
+                    hotel.tambahKamar();
+                    break;
+                case 2:
+                    hotel.lihatInformasiKamar();
+                    break;
+                case 3:
+                    hotel.editDataKamar();
+                    break;
+                case 4:
+                    hotel.reservasiKamar();
+                    break;
+                case 5:
+                    hotel.lihatDetailReservasi();
+                    break;
+                case 6:
+                    hotel.checkOut();
+                    break;
+                case 7:
+                    hotel.lihatJumlahKamarTersedia();
+                    break;
+                case 8:
+                    hotel.lihatDataTamu();
+                    break;
+                case 0:
+                    System.out.println("Terima kasih. Program selesai.");
+                    System.exit(0);
+                    break;
+                default:
+                    System.out.println("Pilihan tidak valid. Silakan pilih kembali.");
+            }
+        }
+    }
+}
